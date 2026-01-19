@@ -22,53 +22,61 @@
         <a href="index.html" class="back">← ホームに戻る</a>
     </div>
 
-    <script>
-        const wordDisplay = document.getElementById('word');
-        const inputField = document.getElementById('input-field');
-        const statusDisplay = document.getElementById('status');
-        let newsItems = [];
-        let currentIndex = 0;
+   <script>
+    const wordDisplay = document.getElementById('word');
+    const inputField = document.getElementById('input-field');
+    const statusDisplay = document.getElementById('status');
+    let newsItems = [];
+    let currentIndex = 0;
 
-        async function init() {
-            try {
-                const res = await fetch('./news_data.txt?t=' + Date.now());
-                alert('ファイルの読み込みを試行しました。ステータスコード: ' + res.status);
-                
-                if (!res.ok) throw new Error();
+    async function init() {
+        try {
+            // 1. ファイルを読みに行く
+            const res = await fetch('./news_data.txt?t=' + Date.now());
+            
+            if (!res.ok) throw new Error("File not found");
 
-                // ファイルの中身を取得する処理を追加
-                const text = await res.text();
+            // 2. ★重要★ ファイルの「テキスト中身」を取り出す（ここが抜けていました）
+            const text = await res.text();
+            
+            // 3. 改行で区切って配列にする
+            newsItems = text.trim().split('\n')
+                .map(item => item.trim()) 
+                .filter(item => item.length > 0); 
 
-                newsItems = text.trim().split('\n')
-                    .map(item => item.trim())
-                    .filter(item => item.length > 0);
-
+            if (newsItems.length > 0) {
                 updateDisplay();
-            } catch (e) {
-                wordDisplay.textContent = "ニュースがまだありません。Actionsを実行してください。";
-            }
-        }
-
-        function updateDisplay() {
-            if (currentIndex < newsItems.length) {
-                wordDisplay.textContent = newsItems[currentIndex];
-                statusDisplay.textContent = `残り: ${newsItems.length - currentIndex} 件`;
-                inputField.value = '';
             } else {
-                wordDisplay.textContent = "✨ 本日のニュース終了! ✨";
-                inputField.disabled = true;
-                statusDisplay.textContent = "お疲れ様でした";
+                wordDisplay.textContent = "ニュースが空っぽです。";
             }
+        } catch (e) {
+            wordDisplay.textContent = "ニュースを読み込めませんでした。";
+            console.error(e);
         }
+    }
 
-        inputField.addEventListener('input', () => {
-            if (inputField.value === newsItems[currentIndex]) {
-                currentIndex++;
-                updateDisplay();
-            }
-        });
+    function updateDisplay() {
+        if (currentIndex < newsItems.length) {
+            wordDisplay.textContent = newsItems[currentIndex];
+            statusDisplay.textContent = `残り: ${newsItems.length - currentIndex} 件`;
+            inputField.value = '';
+        } else {
+            wordDisplay.textContent = "✨ 本日のニュース終了！ ✨";
+            inputField.disabled = true;
+            statusDisplay.textContent = "お疲れ様でした";
+        }
+    }
 
-        init();
-    </script>
+    inputField.addEventListener('input', () => {
+        // 入力した文字がニュースの文字列と完全に一致したら次へ
+        if (inputField.value === newsItems[currentIndex]) {
+            currentIndex++;
+            updateDisplay();
+        }
+    });
+
+    init();
+</script>
+
 </body>
 </html>
