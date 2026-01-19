@@ -12,26 +12,13 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Fetch News Simple
+      - name: Fetch
         run: |
-          # 出力ファイルを空にする
-          echo "" > news.txt
-
-          # 主要ニュースのみを取得して追加
-          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -o '<title>.*</title>' | sed -e 's/<title>//g' -e 's/<\/title>//g' >> news.txt
-
-          # 1行目のサイト名を消して上位15件にする
-          sed -i '1d' news.txt
-          head -n 15 news.txt > temp.txt && mv temp.txt news.txt
-          
-          echo "--- Result ---"
-          cat news.txt
-
-      - name: Commit and Push
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news.txt
+      - name: Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news.txt
-          git commit -m "Update news" || exit 0
+          git commit -m "Update" || exit 0
           git push
