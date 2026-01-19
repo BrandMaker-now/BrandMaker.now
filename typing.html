@@ -22,27 +22,21 @@
     const inputField = document.getElementById('input-field');
     let newsItems = [];
     let currentIndex = 0;
-
     async function init() {
         try {
-            // 現在時刻を付けてキャッシュを回避
             const res = await fetch('./news.txt?t=' + Date.now());
             if (!res.ok) throw new Error();
             const text = await res.text();
-            
-            // 行ごとに分割し、空行や空白のみの行を除去
             newsItems = text.trim().split('\n').map(s => s.trim()).filter(s => s !== "");
-            
             if (newsItems.length === 0) {
-                wordDisplay.textContent = "ニュースがまだ空です。Actionsを手動実行してください。";
+                wordDisplay.textContent = "ニュースが空です。Actionsを実行してください。";
             } else {
                 update();
             }
         } catch (e) {
-            wordDisplay.textContent = "news.txtが見つかりません。";
+            wordDisplay.textContent = "ニュースを読み込めませんでした。";
         }
     }
-
     function update() {
         if (currentIndex < newsItems.length) {
             wordDisplay.textContent = newsItems[currentIndex];
@@ -53,14 +47,12 @@
             inputField.disabled = true;
         }
     }
-
     inputField.addEventListener('input', () => {
         if (inputField.value === newsItems[currentIndex]) {
             currentIndex++;
             update();
         }
     });
-
     init();
 </script>
 </body>
