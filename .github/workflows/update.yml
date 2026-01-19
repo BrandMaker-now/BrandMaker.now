@@ -13,7 +13,7 @@ jobs:
       - name: Fetch
         run: |
           # RSSからタイトルを抽出し、1行目のサイト名を除去してnews.txtに保存
-          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news.txt
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp/rss" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news.txt
       - name: Push
         run: |
           git config user.name "github-actions[bot]"
