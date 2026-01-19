@@ -27,7 +27,7 @@
     async function init() {
         try {
             // ファイルを取得
-            const res = await fetch('./news_data.txt?t=' + Date.now());
+            const res = await fetch('./news.txt?t=' + Date.now());
             
             // 200 OK かチェック
             if (!res.ok) {
