@@ -1,3 +1,20 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>News Typing</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .container { background: white; padding: 40px; border-radius: 15px; text-align: center; width: 90%; max-width: 600px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #word { font-size: 24px; font-weight: bold; margin-bottom: 20px; min-height: 1.5em; color: #333; }
+        input { width: 100%; font-size: 20px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="word">ニュースを読み込んでいます...</div>
+    <input type="text" id="input-field" autocomplete="off" placeholder="ここにタイピング">
+</div>
 <script>
     const wordDisplay = document.getElementById('word');
     const inputField = document.getElementById('input-field');
@@ -7,29 +24,29 @@
     async function init() {
         try {
             const res = await fetch('./news.txt?t=' + Date.now());
-            if (!res.ok) throw new Error();
+            if (!res.ok) {
+                wordDisplay.textContent = "news.txtが見つかりません。Actionsを実行してください。";
+                return;
+            }
             const text = await res.text();
+            newsItems = text.trim().split('\n').filter(line => line.trim() !== "");
             
-            // 空白を除去して配列にする
-            newsItems = text.trim().split('\n').filter(i => i.trim().length > 0);
-            
-            // もし中身が空だったら
             if (newsItems.length === 0) {
-                wordDisplay.textContent = "ニュースを更新中です。少々お待ちください。";
+                wordDisplay.textContent = "ニュースが空です。";
             } else {
-                updateDisplay();
+                showNext();
             }
         } catch (e) {
-            wordDisplay.textContent = "ニュースファイルが見つかりません。Actionsを実行してください。";
+            wordDisplay.textContent = "エラーが発生しました。";
         }
     }
 
-    function updateDisplay() {
+    function showNext() {
         if (currentIndex < newsItems.length) {
             wordDisplay.textContent = newsItems[currentIndex];
             inputField.value = '';
         } else {
-            wordDisplay.textContent = "✨ すべて完了！ ✨";
+            wordDisplay.textContent = "すべて終了！お疲れ様でした。";
             inputField.disabled = true;
         }
     }
@@ -37,9 +54,11 @@
     inputField.addEventListener('input', () => {
         if (inputField.value === newsItems[currentIndex]) {
             currentIndex++;
-            updateDisplay();
+            showNext();
         }
     });
 
     init();
 </script>
+</body>
+</html>
