@@ -1,9 +1,9 @@
-name: Update Daily News # ワークフローの名前
+name: Update Daily News
 
 on:
-  workflow_dispatch: # 手動実行を許可する
+  workflow_dispatch:
   schedule:
-    - cron: '0 21 * * *' # 日本時間 朝6時 (UTC 21:00) に毎日実行
+    - cron: '0 21 * * *'
 
 jobs:
   build:
@@ -13,35 +13,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch RSS for multiple genres # ジャンルごとにニュースを取得
+      - name: Fetch RSS for multiple genres
         run: |
-          # Yahoo!ニュースのRSSフィードからタイトルを取得し、各ファイルに出力します
+          # コマンドを少し頑丈な書き方に変更しました
+          fetch_titles() {
+            curl -s "$1" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > "$2"
+            echo "--- Contents of $2 ---"
+            cat "$2"
+            echo "--------------------------"
+          }
           
-          # 主要ニュース
-          curl -s https://news.yahoo.co.jp \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
-          | tail -n +2 > news_top.txt
-          
-          # 経済
-          curl -s https://news.yahoo.co.jp \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
-          | tail -n +2 > news_business.txt
+          fetch_titles https://news.yahoo.co.jp news_top.txt
+          fetch_titles https://news.yahoo.co.jp news_business.txt
+          fetch_titles https://news.yahoo.co.jp news_ent.txt
+          fetch_titles https://news.yahoo.co.jp news_it.txt
 
-          # エンタメ
-          curl -s https://news.yahoo.co.jp \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
-          | tail -n +2 > news_ent.txt
-
-          # IT・科学
-          curl -s https://news.yahoo.co.jp \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
-          | tail -n +2 > news_it.txt
-
-      - name: Commit and Push # 変更をコミットしてプッシュ
+      - name: Commit and Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # news_ で始まるファイル全てを追加対象とする
           git add news_*.txt
           if ! git diff --staged --quiet; then
             git commit -m "Update multi-genre news $(date +'%Y-%m-%d')"
