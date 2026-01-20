@@ -19,12 +19,13 @@ jobs:
           # 2. タグの中身だけを抜き出す
           # 3. サイト名が入る1行目を削除
           curl -sL "https://news.yahoo.co.jp/rss/topics/top-picks.xml" \
-          | grep -E "<title>|<link>|<description>" \
+                - name: Fetch RSS and Extract Data
+          | grep -E "<title>|<link>" \
           | sed -e 's/<[^>]*>//g' \
           | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
           | sed '1,2d' \
-          | awk 'NR%3==1{t=$0} NR%3==2{l=$0} NR%3==0{print t " | " $0 " | " l}' \
           > news.txt
+
           
           # ログで中身を確認
           echo "--- ニュース抽出結果 ---"
