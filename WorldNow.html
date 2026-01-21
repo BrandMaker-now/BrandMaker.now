@@ -1,22 +1,17 @@
-<!-- 動画を表示するエリア -->
-<div id="player-wrapper" style="position:relative; width:560px; height:315px; background:#000;">
+<div id="video-area" style="position:relative; width:560px; height:315px; background:#000;">
+  <!-- YouTubeプレイヤー -->
   <div id="player"></div>
   
-  <!-- 再生前に表示されるボタン（デザインは自由に変えられます） -->
-  <div id="play-button-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.5); cursor:pointer; z-index:10;">
-    <button style="padding:15px 30px; font-size:18px; cursor:pointer; background:#ff0000; color:#fff; border:none; border-radius:5px;">
-      動画を再生する（音あり）
-    </button>
+  <!-- 重なるボタン -->
+  <div id="play-mask" onclick="startVideo()" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.7); cursor:pointer; z-index:100;">
+    <div style="padding:15px 30px; background:#f00; color:#fff; font-weight:bold; border-radius:10px; font-size:20px;">
+      動画を再生する
+    </div>
   </div>
 </div>
 
+<script src="https://www.youtube.com/embed/OuCbntsMsWY?si=07McOiyJUwJfMQod"></script>
 <script>
-  // YouTube IFrame Player API の読み込み
-  var tag = document.createElement('script');
-  tag.src = "https://www.youtube.com/embed/OuCbntsMsWY?si=07McOiyJUwJfMQod";
-  var firstScriptTag = document.getElementsByTagName('script')[0];
-  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
   var player;
   function onYouTubeIframeAPIReady() {
     player = new YT.Player('player', {
@@ -24,25 +19,27 @@
       width: '560',
       videoId: 'OuCbntsMsWY',
       playerVars: {
+        'autoplay': 0,
+        'controls': 0,
         'playsinline': 1,
-        'controls': 0,    // 停止できないようにコントロールを隠す
-        'rel': 0,
-        'showinfo': 0
+        'rel': 0
       }
     });
   }
 
-  // ボタンをクリックした時の動作
-  document.getElementById('play-button-overlay').addEventListener('click', function() {
-    if (player && player.playVideo) {
-      player.unMute();     // ミュート解除
-      player.playVideo();  // 再生開始
-      this.style.display = 'none'; // ボタンを消す
+  function startVideo() {
+    if (player && typeof player.playVideo === 'function') {
+      player.unMute(); // 音を出す
+      player.playVideo(); // 再生
+      // ボタンがあるマスクを完全に消す
+      document.getElementById('play-mask').style.display = 'none';
+    } else {
+      console.log("まだ読み込み中です。もう一度押してください。");
     }
-  });
+  }
 </script>
 
 <style>
-  /* 停止されないようにクリックを無効化 */
+  /* 再生開始後、動画をクリックしても止まらないようにする */
   #player { pointer-events: none; }
 </style>
