@@ -15,18 +15,30 @@
 
         #curtain {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 6; display: none;
+            background: #000; z-index: 10; display: none;
             flex-direction: column; justify-content: center; align-items: center; color: white;
         }
 
-        /* 国名と時刻の表示 */
+        /* 国名と時刻の表示（読み込み中は隠す） */
         #info-display {
             position: absolute; bottom: 40px; left: 40px; z-index: 7;
             color: white; text-shadow: 2px 2px 8px rgba(0,0,0,1);
             pointer-events: none; font-weight: bold;
+            display: none; 
         }
         #info-country { font-size: 32px; margin-bottom: 5px; }
         #info-time { font-size: 24px; opacity: 0.9; }
+
+        /* タイマーバー（読み込み中は隠す） */
+        #progress-container {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 8px;
+            background: rgba(255, 255, 255, 0.2); z-index: 8;
+            display: none;
+        }
+        #progress-bar {
+            height: 100%; width: 100%; background: #ff0000;
+            transition: width linear;
+        }
 
         .loader {
             border: 5px solid #333; border-top: 5px solid #fff; border-radius: 50%;
@@ -37,7 +49,7 @@
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; display: flex; justify-content: center; align-items: center;
-            z-index: 10; color: white;
+            z-index: 20; color: white;
         }
         #start-btn { 
             padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white;
@@ -57,6 +69,9 @@
             <div id="info-country"></div>
             <div id="info-time"></div>
         </div>
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
         <div id="curtain">
             <div class="loader"></div>
             <div style="font-size: 24px; letter-spacing: 2px;">読み込み中...</div>
@@ -65,11 +80,9 @@
         <div id="player"></div>
     </div>
 
-<!-- ご指定の正しいリンク -->
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
-    // ライブカメラリスト
     const videoList = [
         { id: 'OuCbntsMsWY', name: '日本 - 千葉 - 成田国際空港', tz: 'Asia/Tokyo' },
         { id: 'rnXIjl_Rzy4', name: 'アメリカ - ニューヨーク - タイムズスクエア', tz: 'America/New_York' },
@@ -87,6 +100,7 @@
     let currentVideo = null;
     let isTourStarted = false;
     let isButtonEnabled = false;
+    let nextDestinationTimer = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         const startBtn = document.getElementById('start-btn');
@@ -108,17 +122,25 @@
 
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) {
+            // 広告検知：広告なら即スキップ
             const isAd = player.getAdState && player.getAdState() === 1;
             if (isAd) {
                 nextDestination();
-            } else {
-                player.unMute();
-                player.setVolume(50);
-                updateInfoText();
-                setTimeout(() => {
-                    document.getElementById('curtain').style.display = 'none';
-                }, 5000);
+                return;
             }
+
+            // 本編再生時のみ実行
+            player.unMute();
+            player.setVolume(50);
+            updateInfoText();
+
+            // 5秒後にカーテンを開き、情報を表示
+            setTimeout(() => {
+                document.getElementById('curtain').style.display = 'none';
+                document.getElementById('info-display').style.display = 'block';
+                document.getElementById('progress-container').style.display = 'block';
+                startBar(); // バーのアニメーション開始
+            }, 5000);
         }
         if (isTourStarted && event.data === YT.PlayerState.PAUSED) {
             player.playVideo();
@@ -131,14 +153,19 @@
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('curtain').style.display = 'flex';
         player.playVideo();
-        setInterval(nextDestination, 60000); 
         setInterval(updateTimeOnly, 1000);
     }
 
     function nextDestination() {
-        if(!player || typeof player.loadVideoById !== 'function') return;
+        // 全タイマーと表示をリセット
+        clearTimeout(nextDestinationTimer);
         document.getElementById('curtain').style.display = 'flex';
-        
+        document.getElementById('info-display').style.display = 'none';
+        document.getElementById('progress-container').style.display = 'none';
+        resetBar();
+
+        if(!player || typeof player.loadVideoById !== 'function') return;
+
         let nextVideo;
         do {
             nextVideo = videoList[Math.floor(Math.random() * videoList.length)];
@@ -148,6 +175,20 @@
         player.mute();
         player.loadVideoById(currentVideo.id);
         player.playVideo();
+    }
+
+    function startBar() {
+        const bar = document.getElementById('progress-bar');
+        bar.style.transition = 'width 60s linear';
+        bar.style.width = '0%';
+        // 60秒後に次の目的地へ
+        nextDestinationTimer = setTimeout(nextDestination, 60000);
+    }
+
+    function resetBar() {
+        const bar = document.getElementById('progress-bar');
+        bar.style.transition = 'none';
+        bar.style.width = '100%';
     }
 
     function updateInfoText() {
