@@ -1,75 +1,51 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-    <meta charset="UTF-8">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
         #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: flex; justify-content: center; align-items: center; }
-        /* ロード中はボタンを隠す */
-        #start-btn { display: none; padding: 20px 40px; background: #ff0000; color: #fff; font-size: 20px; border: none; border-radius: 50px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="player"></div>
 
-    <div id="ui-layer">
-        <button id="start-btn" onclick="startTour()">世界旅行を始める（音あり）</button>
-    </div>
-
-<script src="https://www.youtube.com"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    const videoList = [
-        'DhB2NS6i4uA', // あなたのライブカメラID
-        'DhB2NS3i4uA', // 次のライブカメラ（例）
-        '5_XSYlAfJZM'  // その次のライブカメラ（例）
-    ];
+    // ここにライブカメラのIDをリストアップしてください
+    const videoList = ['ID1', 'ID2', 'ID3', 'ID4']; 
     let currentIndex = 0;
     let player;
 
-    // YouTube APIが読み込まれたら実行される関数
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%',
             width: '100%',
             videoId: videoList[currentIndex],
-            playerVars: {
-                'autoplay': 0, 'controls': 0, 'mute': 1, 'playsinline': 1, 'enablejsapi': 1,
-                'origin': window.location.origin // ★これがCORB対策の鍵です
+            playerVars: { 
+                'autoplay': 1, // 自動再生
+                'controls': 0, 
+                'mute': 1,     // ★音なしならブロックされない
+                'playsinline': 1,
+                'enablejsapi': 1,
+                'origin': window.location.origin
             },
             events: {
-                'onReady': onPlayerReady // プレイヤー準備完了後にボタン表示
+                'onReady': onPlayerReady
             }
         });
     }
-    
-    // プレイヤーの準備ができたらボタンを表示する
+
     function onPlayerReady(event) {
-        document.getElementById('start-btn').style.display = 'block';
-    }
-
-    // ユーザーがボタンをクリックしたら実行
-    function startTour() {
-        document.getElementById('ui-layer').style.display = 'none';
-        playCurrentVideo(true); // 初回は音ありで再生開始
-
-        // 60秒ごとに切り替え
-        setInterval(nextDestination, 60000);
-    }
-
-    function playCurrentVideo(unmute = false) {
-        if (player && player.loadVideoById) {
-            // ここでのCORBエラーを避けるため、APIの関数を経由する
-            player.loadVideoById(videoList[currentIndex]);
-            if (unmute) player.unMute();
-            player.playVideo();
-        }
+        event.target.playVideo();
+        // 60秒（1分）ごとに次の動画に切り替え
+        setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
         currentIndex = (currentIndex + 1) % videoList.length;
-        playCurrentVideo(); // 次からはブラウザが音を止める可能性が高いため、unMuteは呼ばない
+        // ミュート状態を維持したまま次の動画に切り替える
+        player.loadVideoById(videoList[currentIndex]); 
     }
 </script>
 </body>
