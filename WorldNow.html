@@ -19,24 +19,22 @@
             flex-direction: column; justify-content: center; align-items: center; color: white;
         }
 
-        /* 国名と時刻の表示（読み込み中は隠す） */
+        /* 読み込み中は非表示 */
         #info-display {
             position: absolute; bottom: 40px; left: 40px; z-index: 7;
             color: white; text-shadow: 2px 2px 8px rgba(0,0,0,1);
-            pointer-events: none; font-weight: bold;
-            display: none; 
+            pointer-events: none; font-weight: bold; display: none; 
         }
         #info-country { font-size: 32px; margin-bottom: 5px; }
         #info-time { font-size: 24px; opacity: 0.9; }
 
-        /* タイマーバー（読み込み中は隠す） */
+        /* 白色プログレスバー（読み込み中は非表示） */
         #progress-container {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 8px;
-            background: rgba(255, 255, 255, 0.2); z-index: 8;
-            display: none;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 6px;
+            background: rgba(255, 255, 255, 0.1); z-index: 8; display: none;
         }
         #progress-bar {
-            height: 100%; width: 100%; background: #ff0000;
+            height: 100%; width: 100%; background: #ffffff;
             transition: width linear;
         }
 
@@ -58,7 +56,7 @@
         #start-btn.enabled { cursor: pointer; opacity: 1.0; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <div id="overlay">
         <button id="start-btn">世界へ旅に出る（音あり）</button>
@@ -77,9 +75,11 @@
             <div style="font-size: 24px; letter-spacing: 2px;">読み込み中...</div>
         </div>
         <div id="guard"></div>
-        <div id="player"></div>
+        <!-- PiP禁止属性 -->
+        <div id="player" disablePictureInPicture></div>
     </div>
 
+<!-- 正しいAPIリンク -->
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
@@ -115,31 +115,31 @@
         currentVideo = videoList[Math.floor(Math.random() * videoList.length)];
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: currentVideo.id,
-            playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1 },
+            playerVars: { 
+                'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 
+                'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1 
+            },
             events: { 'onStateChange': onPlayerStateChange }
         });
     }
 
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) {
-            // 広告検知：広告なら即スキップ
             const isAd = player.getAdState && player.getAdState() === 1;
             if (isAd) {
                 nextDestination();
                 return;
             }
 
-            // 本編再生時のみ実行
             player.unMute();
             player.setVolume(50);
             updateInfoText();
 
-            // 5秒後にカーテンを開き、情報を表示
             setTimeout(() => {
                 document.getElementById('curtain').style.display = 'none';
                 document.getElementById('info-display').style.display = 'block';
                 document.getElementById('progress-container').style.display = 'block';
-                startBar(); // バーのアニメーション開始
+                startBar(); 
             }, 5000);
         }
         if (isTourStarted && event.data === YT.PlayerState.PAUSED) {
@@ -157,7 +157,6 @@
     }
 
     function nextDestination() {
-        // 全タイマーと表示をリセット
         clearTimeout(nextDestinationTimer);
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
@@ -179,9 +178,14 @@
 
     function startBar() {
         const bar = document.getElementById('progress-bar');
-        bar.style.transition = 'width 60s linear';
-        bar.style.width = '0%';
-        // 60秒後に次の目的地へ
+        bar.style.transition = 'none';
+        bar.style.width = '100%';
+        
+        setTimeout(() => {
+            bar.style.transition = 'width 60s linear';
+            bar.style.width = '0%';
+        }, 50);
+
         nextDestinationTimer = setTimeout(nextDestination, 60000);
     }
 
