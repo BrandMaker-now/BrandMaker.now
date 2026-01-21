@@ -7,29 +7,13 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         iframe { border: none; width: 100%; height: 100%; }
         
-        /* スタート画面のスタイル (ダークテーマ) */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); /* 半透明の黒背景 */
-            display: flex; flex-direction: column; /* 縦並び */
-            justify-content: center; align-items: center;
-            z-index: 10; color: white; /* テキスト色を白に */
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10; color: white;
         }
-        
-        #main-title {
-            font-size: 36px;
-            margin-bottom: 50px; 
-            text-align: center;
-        }
-
-        /* ボタンのスタイル (画像通りの白枠デザイン) */
-        #start-btn {
-            padding: 20px 40px; font-size: 20px;
-            border: 2px solid white; /* 白い枠線 */
-            background: none; /* 背景なし */
-            color: white; /* 白い文字 */
-            cursor: pointer;
-        }
+        #main-title { font-size: 36px; margin-bottom: 50px; text-align: center; }
+        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -39,20 +23,16 @@
         <button id="start-btn" onclick="startTour()">世界へ旅に出る（音あり）</button>
     </div>
 
-    <!-- ここに動画が表示される -->
     <div id="container" style="width:100%; height:100%;"></div>
 
 <script>
-    // YouTube APIを使いません
     const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'v6Nf0Wf8S_0', '5_XidpxV960']; 
     let currentIndex = 0;
-    // シンプル版では音あり固定（mute=0）
-    const isMuted = 0; 
+    const isMuted = 0; // 音あり固定
 
     function startTour() {
         document.getElementById('overlay').style.display = 'none';
         loadVideo();
-        // 1分ごとに切り替え
         setInterval(next, 60000);
     }
 
@@ -63,12 +43,9 @@
 
     function loadVideo() {
         const videoId = videoList[currentIndex];
-        
-        // iframeのURLを直接生成して差し替える
+        // iframeのURLを直接生成
         const url = `https://www.youtube.com{videoId}?autoplay=1&mute=${isMuted}&controls=0&modestbranding=1&rel=0`;
-        
         const container = document.getElementById('container');
-        // iframeを再生成することで、確実に新しい動画を音量設定込みで読み込ませる
         container.innerHTML = `<iframe src="${url}" allow="autoplay; encrypted-media"></iframe>`;
     }
 </script>
