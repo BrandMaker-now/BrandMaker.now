@@ -44,7 +44,7 @@
     let currentIndex = 0;
     let player;
     let isTourStarted = false;
-    let isPlayerReady = false; // ★追加：プレーヤー準備完了フラグ
+    let tryPlayInterval = null; // 再生試行ループ用の変数
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
@@ -56,9 +56,6 @@
                 'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1 
             },
             events: {
-                'onReady': () => { // ★追加：準備完了を検知
-                    isPlayerReady = true;
-                },
                 'onStateChange': onPlayerStateChange
             }
         });
@@ -66,12 +63,20 @@
 
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) {
+            // 再生が始まったら音を出す
             player.unMute();
             player.setVolume(50);
             
+            // 5秒後にカーテンを消す
             setTimeout(() => {
                 document.getElementById('curtain').style.display = 'none';
             }, 5000);
+
+            // もし試行ループが動いていたら止める
+            if (tryPlayInterval) {
+                clearInterval(tryPlayInterval);
+                tryPlayInterval = null;
+            }
         }
 
         if (isTourStarted && event.data === YT.PlayerState.PAUSED) {
@@ -80,28 +85,32 @@
     }
 
     function startTour() {
-        // ★修正：isPlayerReadyがtrue（準備完了）でないと実行しない
-        if (!isPlayerReady) {
-            alert("まだ動画の準備中です。数秒お待ちください。");
-            return; 
-        }
-
         isTourStarted = true;
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('curtain').style.display = 'block';
         
-        player.playVideo(); 
+        // ★修正：再生を試行するループを開始
+        tryPlayInterval = setInterval(() => {
+            if (player && typeof player.playVideo === 'function') {
+                player.playVideo();
+            }
+        }, 100); // 0.1秒ごとに再生命令を出す
+        
         setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
         document.getElementById('curtain').style.display = 'block';
-        
         currentIndex = (currentIndex + 1) % videoList.length;
-        
         player.mute();
         player.loadVideoById(videoList[currentIndex]);
-        player.playVideo();
+        
+        // ★修正：次の動画ロード時も再生試行ループを開始
+        tryPlayInterval = setInterval(() => {
+            if (player && typeof player.playVideo === 'function') {
+                player.playVideo();
+            }
+        }, 100);
     }
 </script>
 </body>
