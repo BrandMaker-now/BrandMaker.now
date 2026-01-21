@@ -4,26 +4,38 @@
     <meta charset="UTF-8">
     <title>世界一周 窓の旅</title>
     <style>
-        body { background: #e6e9ed; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Helvetica Neue', sans-serif; }
+        /* 機内の壁のような背景 */
+        body { 
+            background: #e6e9ed; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: 'Helvetica Neue', sans-serif; 
+        }
 
+        /* 飛行機の窓：横幅を拡大 */
         .window {
             position: relative; 
-            width: 400px;  /* 横幅 */
-            height: 600px; /* 縦幅 */
+            width: 500px;  /* 横幅を500pxに拡大 */
+            height: 600px; /* 縦幅はそのまま */
             background: #000;
             border: 25px solid #fdfdfd; 
             border-radius: 150px; 
             overflow: hidden; 
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,0,0,1); 
+            box-shadow: 
+                0 30px 60px rgba(0,0,0,0.4), 
+                inset 0 0 30px rgba(0,0,0,1); 
             z-index: 1;
         }
 
-        /* embedタグ用のコンテナ */
+        /* 動画コンテナ：ロゴを隠すために幅を調整 */
         .video-container { 
             position: absolute; 
             top: 0; 
-            left: -50%; /* ロゴを隠すために左右にずらす */
-            width: 200%; /* 幅を2倍にしてロゴを隠す */
+            left: -25%; /* 横幅が広がるので、中心を調整 */
+            width: 150%; /* 幅を広げてロゴを隠す */
             height: 100%; 
         }
 
@@ -33,14 +45,18 @@
             pointer-events: none; 
         }
 
+        /* 情報パネル */
         .info { position: absolute; top: 50px; width: 100%; text-align: center; color: white; z-index: 10; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
         #loc { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
         #time { font-size: 14px; opacity: 0.8; }
 
+        /* タイマーバー */
         .timer-bar { position: absolute; bottom: 0; left: 0; height: 5px; background: rgba(255,255,255,0.5); width: 0%; z-index: 20; }
 
+        /* スタート画面 */
         #start-screen { position: fixed; inset: 0; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-        button { padding: 18px 50px; border-radius: 40px; border: none; font-size: 20px; cursor: pointer; font-weight: bold; }
+        h2 { margin-bottom: 30px; letter-spacing: 3px; }
+        button { padding: 18px 50px; border-radius: 40px; border: none; font-size: 20px; cursor: pointer; font-weight: bold; background: white; color: black; }
     </style>
 </head>
 <body>
@@ -82,8 +98,11 @@
             const v = videos[currentIndex];
             document.getElementById('loc').innerText = v.name;
             
+            const bar = document.getElementById('bar');
+            bar.style.transition = 'none';
+            bar.style.width = '0%';
+            
             const playerBox = document.getElementById('player-box');
-            // embedタグでYouTube動画を読み込む
             playerBox.innerHTML = `
                 <embed
                     src="https://www.youtube.com{v.id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3"
@@ -91,30 +110,20 @@
                     allowscriptaccess="always">
                 `;
 
+            setTimeout(() => {
+                bar.style.transition = 'width 60s linear';
+                bar.style.width = '100%';
+            }, 100);
+
             currentIndex = (currentIndex + 1) % videos.length;
 
-            // 1分後に次の動画へ
             clearTimeout(timer);
             timer = setTimeout(playNext, 60000);
-            startTimerBar();
-        }
-
-        function startTimerBar() {
-            clearInterval(timerBarInterval);
-            const bar = document.getElementById('bar');
-            bar.style.width = '0%';
-            let count = 0;
-            timerBarInterval = setInterval(() => {
-                count++;
-                bar.style.width = (count / 60 * 100) + '%';
-                if (count >= 60) {
-                    clearInterval(timerBarInterval);
-                }
-            }, 1000);
         }
 
         setInterval(() => {
-            document.getElementById('time').innerText = new Date().toLocaleTimeString();
+            const now = new Date();
+            document.getElementById('time').innerText = now.toLocaleTimeString();
         }, 1000);
     </script>
 </body>
