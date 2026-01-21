@@ -2,21 +2,34 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>World Tour Live</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         #player-container { position: relative; width: 100%; height: 100%; }
         #player { width: 100%; height: 100%; }
-        #guard { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: rgba(0,0,0,0); }
-        #curtain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 6; display: none; }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 10; color: white; cursor: pointer; }
+        
+        #guard {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; background: rgba(0,0,0,0);
+        }
+
+        /* タイトル隠し用の黒いカーテン */
+        #curtain {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 6; display: none;
+        }
+
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: flex; justify-content: center; align-items: center;
+            z-index: 10; color: white; cursor: pointer;
+        }
         #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="overlay" onclick="startTour()">
-        <button id="start-btn">世界へ旅に出る（読み込み中...）</button>
+        <button id="start-btn">世界へ旅に出る（ランダム）</button>
     </div>
 
     <div id="player-container">
@@ -25,39 +38,34 @@
         <div id="player"></div>
     </div>
 
-<script src="https://www.youtube.com"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    // ★2026年現在、比較的安定している24時間ライブ配信ID（これらも変わることがあります）
-    const videoList = [
-        'pS6G_vXWcHM', // ニューヨーク タイムズスクエア
-        'XvN6f_N4Ym4', // 東京 渋谷スクランブル交差点
-        'Hdyv9v9S94A', // タイ バンコク
-        'V77mID_3f0M', // 富士山
-        'E9Kq9DbtY-M'  // ロンドン
-    ]; 
-
+    // ★ここに好きな動画IDをどんどん追加してください
+    const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'AhQErfreEOE', 'v6Nf0Wf8S_0']; 
+    
     let player;
     let isTourStarted = false;
-    let isPlayerReady = false; // 準備完了フラグ
-    let lastIndex = -1;
+    let currentIndex = 0;
 
     function onYouTubeIframeAPIReady() {
-        const firstIndex = Math.floor(Math.random() * videoList.length);
-        lastIndex = firstIndex;
+        // 最初の一箇所目をランダムに決める
+        currentIndex = Math.floor(Math.random() * videoList.length);
 
         player = new YT.Player('player', {
             height: '100%',
             width: '100%',
-            videoId: videoList[firstIndex],
+            videoId: videoList[currentIndex],
             playerVars: { 
-                'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1
+                'autoplay': 0,
+                'controls': 0,
+                'disablekb': 1,
+                'rel': 0,
+                'iv_load_policy': 3,
+                'modestbranding': 1,
+                'mute': 1 
             },
-            events: { 
-                'onReady': () => {
-                    isPlayerReady = true;
-                    document.getElementById('start-btn').innerText = "世界へ旅に出る（準備完了）";
-                },
-                'onStateChange': onPlayerStateChange 
+            events: {
+                'onStateChange': onPlayerStateChange
             }
         });
     }
@@ -65,35 +73,41 @@
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) {
             player.unMute();
-            player.setVolume(40);
-            setTimeout(() => { document.getElementById('curtain').style.display = 'none'; }, 5000);
+            player.setVolume(50);
+            
+            setTimeout(() => {
+                document.getElementById('curtain').style.display = 'none';
+            }, 5000);
         }
+
         if (isTourStarted && event.data === YT.PlayerState.PAUSED) {
             player.playVideo();
         }
     }
 
     function startTour() {
-        if (!isPlayerReady) return; // 準備ができるまで反応させない
-
         isTourStarted = true;
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('curtain').style.display = 'block';
-        player.playVideo();
+        
+        player.playVideo(); 
         setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
         document.getElementById('curtain').style.display = 'block';
         
+        // ★次に行く場所をランダムに選ぶ（前回と同じにならないようにする）
         let nextIndex;
         do {
             nextIndex = Math.floor(Math.random() * videoList.length);
-        } while (nextIndex === lastIndex);
+        } while (nextIndex === currentIndex && videoList.length > 1);
         
-        lastIndex = nextIndex;
+        currentIndex = nextIndex;
+        
         player.mute();
-        player.loadVideoById(videoList[nextIndex]);
+        player.loadVideoById(videoList[currentIndex]);
+        player.playVideo();
     }
 </script>
 </body>
