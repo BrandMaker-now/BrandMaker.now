@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- スタイルなどは省略 -->
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        /* 動画をクリックしても反応しないようにする */
+        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    </style>
 </head>
 <body>
 
@@ -9,17 +13,27 @@
 
 <script src="https://www.youtube.com"></script>
 <script>
-    const videoList = ['OuCbntsMsWY', 'ID2', 'ID3']; // ここにライブIDをリストアップ
+    // あなたのライブカメラIDを一番上に設定
+    const videoList = [
+        'OuCbntsMsWY', 
+        'eJ7ZkQ5TC08', // 次のライブカメラIDをここに追加
+        '5_XSYlAfJZM'  // その次のライブカメラIDをここに追加
+        // 以下、追加していく
+    ]; 
     let currentIndex = 0;
     let player;
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
+            height: '100%',
+            width: '100%',
             videoId: videoList[currentIndex],
             playerVars: { 
-                'autoplay': 1, 
-                'mute': 1,     // ★音なし
-                'controls': 0, 
+                'autoplay': 1, // 自動再生ON
+                'controls': 0, // 操作パネルOFF
+                'mute': 1,     // ★ここが重要（音なし）
+                'playsinline': 1,
+                'enablejsapi': 1,
                 'origin': window.location.origin
             },
             events: {
@@ -29,12 +43,15 @@
     }
 
     function onPlayerReady(event) {
+        // プレイヤーの準備ができたらすぐに再生
         event.target.playVideo();
+        // 60秒（1分）ごとに次の動画に切り替え
         setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
         currentIndex = (currentIndex + 1) % videoList.length;
+        // ミュート状態を維持したまま次の動画に切り替える
         player.loadVideoById(videoList[currentIndex]); 
     }
 </script>
