@@ -2,129 +2,47 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>世界一周 窓の旅</title>
+    <title>動作確認用 窓の旅</title>
     <style>
-        /* 機内の壁のような背景 */
-        body { 
-            background: #e6e9ed; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            font-family: 'Helvetica Neue', sans-serif; 
-        }
-
-        /* 飛行機の窓：横幅を拡大 */
+        body { background: #e6e9ed; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
         .window {
-            position: relative; 
-            width: 500px;  /* 横幅を500pxに拡大 */
-            height: 600px; /* 縦幅はそのまま */
-            background: #000;
-            border: 25px solid #fdfdfd; 
-            border-radius: 150px; 
-            overflow: hidden; 
-            box-shadow: 
-                0 30px 60px rgba(0,0,0,0.4), 
-                inset 0 0 30px rgba(0,0,0,1); 
-            z-index: 1;
+            position: relative; width: 400px; height: 600px; background: #000;
+            border: 25px solid #fdfdfd; border-radius: 150px; overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,0,0,1); z-index: 1;
         }
-
-        /* 動画コンテナ：ロゴを隠すために幅を調整 */
-        .video-container { 
-            position: absolute; 
-            top: 0; 
-            left: -25%; /* 横幅が広がるので、中心を調整 */
-            width: 150%; /* 幅を広げてロゴを隠す */
-            height: 100%; 
-        }
-
-        embed { 
-            width: 100%; 
-            height: 100%; 
-            pointer-events: none; 
-        }
-
-        /* 情報パネル */
-        .info { position: absolute; top: 50px; width: 100%; text-align: center; color: white; z-index: 10; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-        #loc { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
-        #time { font-size: 14px; opacity: 0.8; }
-
-        /* タイマーバー */
-        .timer-bar { position: absolute; bottom: 0; left: 0; height: 5px; background: rgba(255,255,255,0.5); width: 0%; z-index: 20; }
-
-        /* スタート画面 */
+        .video-container { position: absolute; top: 0; left: -25%; width: 150%; height: 100%; }
+        embed { width: 100%; height: 100%; pointer-events: none; }
         #start-screen { position: fixed; inset: 0; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-        h2 { margin-bottom: 30px; letter-spacing: 3px; }
         button { padding: 18px 50px; border-radius: 40px; border: none; font-size: 20px; cursor: pointer; font-weight: bold; background: white; color: black; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <h2>WORLD WINDOW</h2>
+        <h2>動作確認 WORLD WINDOW</h2>
         <button onclick="startApp()">搭乗する</button>
     </div>
 
     <div class="window">
-        <div class="info">
-            <div id="loc">LOADING...</div>
-            <div id="time"></div>
-        </div>
         <div class="video-container" id="player-box"></div>
-        <div class="timer-bar" id="bar"></div>
     </div>
 
     <script>
-        const videos = [
-            { id: 'rnXIjl_Rzy4', name: 'Shibuya, Tokyo' },
-            { id: 'xXZqU5vnEug', name: 'Namibia, Africa' },
-            { id: 'Sv9hcJ3k5h4', name: 'Pattaya, Thailand' },
-            { id: 'OuCbntsMsWY', name: 'Times Square, NY' },
-            { id: 'Yzl9offu5g8', name: 'ISS Space Station' },
-            { id: 'zNahac5x0Tw', name: 'Miami Beach, USA' }
-        ];
-
-        let currentIndex = 0;
-        let timer;
-        let timerBarInterval;
-
         function startApp() {
             document.getElementById('start-screen').style.display = 'none';
-            playNext();
+            playTestVideo();
         }
 
-        function playNext() {
-            const v = videos[currentIndex];
-            document.getElementById('loc').innerText = v.name;
-            
-            const bar = document.getElementById('bar');
-            bar.style.transition = 'none';
-            bar.style.width = '0%';
-            
+        function playTestVideo() {
+            const testVideoId = '9bZkp7q19f0'; // 標準的なYouTube動画ID
             const playerBox = document.getElementById('player-box');
             playerBox.innerHTML = `
                 <embed
-                    src="https://www.youtube.com{v.id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3"
+                    src="https://www.youtube.com{testVideoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3"
                     type="video/mp4"
                     allowscriptaccess="always">
                 `;
-
-            setTimeout(() => {
-                bar.style.transition = 'width 60s linear';
-                bar.style.width = '100%';
-            }, 100);
-
-            currentIndex = (currentIndex + 1) % videos.length;
-
-            clearTimeout(timer);
-            timer = setTimeout(playNext, 60000);
         }
-
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('time').innerText = now.toLocaleTimeString();
-        }, 1000);
     </script>
 </body>
 </html>
