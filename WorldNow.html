@@ -1,16 +1,33 @@
-<iframe width="560" height="315" 
-  src="https://www.youtube.com/embed/OuCbntsMsWY?si=07McOiyJUwJfMQod" 
-  title="YouTube video player" 
-  frameborder="0" 
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-  style="pointer-events: none;"
-  allowfullscreen>
-</iframe>
+<div id="player"></div>
+
 <script>
-  // ページ読み込み完了時に実行
-  window.onload = function() {
-    var iframe = document.querySelector('iframe');
-    // ブラウザのブロックを回避するため、一度読み込み直させる
-    iframe.src = iframe.src; 
-  };
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/embed/OuCbntsMsWY?si=07McOiyJUwJfMQod";
+  var firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  var player;
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player', {
+      height: '315',
+      width: '560',
+      videoId: 'OuCbntsMsWY',
+      playerVars: {
+        'autoplay': 1,
+        'mute': 1,
+        'controls': 0,
+        'loop': 1,
+        'playlist': 'OuCbntsMsWY',
+        'playsinline': 1
+      },
+      events: {
+        'onReady': onPlayerReady
+      }
+    });
+  }
+
+  function onPlayerReady(event) {
+    event.target.playVideo();
+  }
 </script>
+<style>#player { pointer-events: none; }</style>
