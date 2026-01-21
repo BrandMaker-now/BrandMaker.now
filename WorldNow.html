@@ -7,16 +7,24 @@
         #player-container { position: relative; width: 100%; height: 100%; }
         #player { width: 100%; height: 100%; }
         
-        /* 透明なガードレイヤー：クリックやタップをすべて無効化する */
+        /* 透明なガードレイヤー（クリック防止） */
         #guard {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; background: rgba(0,0,0,0); /* 完全透明 */
+            z-index: 5; background: rgba(0,0,0,0);
+        }
+
+        /* 読み込み中の黒い目隠し：サムネイルを完全に見えなくする */
+        #black-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 6; /* ガードより上に配置 */
+            display: flex; justify-content: center; align-items: center;
+            color: #333; font-size: 14px;
         }
 
         /* スタート画面 */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center;
             z-index: 10; color: white; cursor: pointer;
         }
         #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
@@ -29,17 +37,18 @@
     </div>
 
     <div id="player-container">
-        <!-- 動画の上のガード -->
+        <!-- サムネイル隠し用の黒画面 -->
+        <div id="black-screen">Loading...</div>
         <div id="guard"></div>
         <div id="player"></div>
     </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://www.youtube.com"></script>
 <script>
-    // ライブカメラIDリスト
     const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'h_m-m4vW9Xk', 'v6Nf0Wf8S_0']; 
     let currentIndex = 0;
     let player;
+    let isStarted = false;
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
@@ -48,11 +57,11 @@
             videoId: videoList[currentIndex],
             playerVars: { 
                 'autoplay': 0,
-                'controls': 0,    // コントロール非表示
-                'disablekb': 1,  // キーボード操作無効
-                'rel': 0,         // 関連動画非表示
-                'iv_load_policy': 3, // アノテーション非表示
-                'modestbranding': 1  // YouTubeロゴを最小限に
+                'controls': 0,
+                'disablekb': 1,
+                'rel': 0,
+                'iv_load_policy': 3,
+                'modestbranding': 1
             },
             events: {
                 'onStateChange': onPlayerStateChange
@@ -60,14 +69,27 @@
         });
     }
 
-    // もし何らかの理由で停止されたら強制再生する
     function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.PAUSED) {
+        const blackScreen = document.getElementById('black-screen');
+
+        // 再生中 (PLAYING) になったら黒画面を消す
+        if (event.data === YT.PlayerState.PLAYING) {
+            blackScreen.style.display = 'none';
+        } 
+        
+        // 動画切り替え中 (BUFFERING) は再び黒画面を出す
+        if (event.data === YT.PlayerState.BUFFERING) {
+            blackScreen.style.display = 'flex';
+        }
+
+        // 強制停止防止
+        if (isStarted && event.data === YT.PlayerState.PAUSED) {
             player.playVideo();
         }
     }
 
     function startTour() {
+        isStarted = true;
         document.getElementById('overlay').style.display = 'none';
         player.unMute();
         player.setVolume(50);
@@ -77,6 +99,9 @@
     }
 
     function nextDestination() {
+        // 切り替え前に黒画面を表示
+        document.getElementById('black-screen').style.display = 'flex';
+        
         currentIndex = (currentIndex + 1) % videoList.length;
         player.loadVideoById(videoList[currentIndex]);
         player.unMute();
