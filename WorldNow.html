@@ -1,45 +1,58 @@
-<div style="position:relative; width:560px; height:315px; background:#000;">
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin: 0; background: #000; color: #fff; text-align: center; font-family: sans-serif; }
+        #player-container { position: relative; width: 100vw; height: 100vh; }
+        iframe { width: 100%; height: 100%; border: none; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="player-container">
     <div id="player"></div>
-    <!-- ボタン -->
-    <div id="overlay" onclick="launchLive()" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.8); cursor:pointer; z-index:10;">
-        <div style="padding:20px 40px; background:#222; color:#fff; border:2px solid #fff; font-weight:bold; border-radius:5px;">
-            ライブ配信を視聴する
-        </div>
+    <div id="overlay" onclick="startJourney()">
+        <div style="border: 2px solid #fff; padding: 20px;">旅を始める（クリック）</div>
     </div>
 </div>
 
-<script src="https://www.youtube.com/embed/OuCbntsMsWY?si=07McOiyJUwJfMQod"></script>
+<script src="https://www.youtube.com"></script>
 <script>
+    // ライブカメラのIDリスト（ここを増やしていく）
+    var liveCameras = ['OuCbntsMsWY', '動画ID2', '動画ID3']; 
+    var currentIndex = 0;
     var player;
+
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-            height: '315',
-            width: '560',
-            videoId: 'OuCbntsMsWY',
-            playerVars: {
-                'autoplay': 0,
-                'controls': 0,
-                'playsinline': 1,
-                'modestbranding': 1
-            }
+            height: '100%',
+            width: '100%',
+            videoId: liveCameras[currentIndex],
+            playerVars: { 'autoplay': 0, 'controls': 0, 'mute': 1, 'playsinline': 1 }
         });
     }
 
-    function launchLive() {
-        // ボタンを消す
+    function startJourney() {
         document.getElementById('overlay').style.display = 'none';
+        playCamera();
+        
+        // 1分（60000ミリ秒）ごとに次へ
+        setInterval(nextCamera, 60000);
+    }
 
-        if (player && player.playVideo) {
-            player.unMute();
-            // ライブ特有の「読み込み中」で止まるのを防ぐため、少し時間を置いて再生命令
-            player.seekTo(player.getDuration(), true); // 最新の地点（LIVE）へ移動
+    function playCamera() {
+        if (player && player.loadVideoById) {
+            player.loadVideoById(liveCameras[currentIndex]);
+            player.unMute(); // 最初のクリック後なので音ありに挑戦
             player.playVideo();
-            
-            // 念のため0.5秒後にもう一度再生命令を投げる（強制実行）
-            setTimeout(function(){
-                player.playVideo();
-            }, 500);
         }
     }
+
+    function nextCamera() {
+        currentIndex = (currentIndex + 1) % liveCameras.length;
+        playCamera();
+    }
 </script>
-<style>#player { pointer-events: none; }</style>
+</body>
+</html>
