@@ -10,13 +10,58 @@
         #player-container { position: relative; width: 100%; height: 100%; }
         #player-wrapper { width: 100%; height: 100%; pointer-events: none; }
         
-        #info-display { position: absolute; bottom: 40px; left: 40px; z-index: 7; color: white; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); pointer-events: none; font-weight: bold; display: none; }
-        #info-country { font-size: 32px; margin-bottom: 5px; }
-        #info-time { font-size: 24px; opacity: 0.9; }
+        /* 目的地情報：ニュース速報風のデザイン（背景透明） */
+        #info-display { 
+            position: absolute; 
+            bottom: 40px; /* 画面下部に配置 */
+            left: 0; 
+            z-index: 15; 
+            display: none;
+            animation: slideIn 0.8s ease-out; /* 出現アニメーション */
+            padding-left: 30px; /* 左側に余白 */
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .news-telop {
+            display: flex;
+            flex-direction: column;
+            background: transparent; 
+        }
         
+        /* テキスト：黒文字に白い影で視認性を確保 */
+        #info-country {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            text-shadow: 
+                -1px -1px 0 #fff,  
+                 1px -1px 0 #fff,
+                -1px  1px 0 #fff,
+                 1px  1px 0 #fff,
+                 0 0 10px rgba(0,0,0,0.5); /* 強い影で背景を選ばない */
+            padding-bottom: 5px;
+            white-space: nowrap;
+        }
+
+        /* 下の白いライン */
+        .white-line {
+            height: 4px;
+            background: white;
+            width: 100%;
+            border-radius: 2px;
+        }
+
+        #info-time { display: none; } /* 時刻は非表示に */
+
+        /* プログレスバー */
         #progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: rgba(255, 255, 255, 0.2); z-index: 8; display: none; }
         #progress-bar { height: 100%; width: 100%; background: #FFFFFF; transform-origin: left; transform: scaleX(1); }
         
+        /* 演出画面（カーテン） */
         #curtain { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: #fff; z-index: 10; display: none; flex-direction: column; 
@@ -36,6 +81,7 @@
         
         .separator { margin: 0 20px; font-size: 40px; color: #ccc; font-weight: 200; }
         
+        /* スタートボタン */
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 20; }
         #start-btn { 
             padding: 25px 50px; font-size: 18px; border: 1px solid #ddd; background: #fff; color: #ccc; 
@@ -53,9 +99,13 @@
         <button id="start-btn">Preparing...</button>
     </div>
     <div id="player-container">
+        <!-- 左下にテロップを配置する構造 -->
         <div id="info-display">
-            <div id="info-country"></div>
-            <div id="info-time"></div>
+            <div class="news-telop">
+                <div id="info-country"></div>
+                <div class="white-line"></div>
+                <div id="info-time"></div>
+            </div>
         </div>
         <div id="progress-container">
             <div id="progress-bar"></div>
@@ -122,13 +172,11 @@
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
         departureCity = tokyoDefault;
-        // 初回の目的地も、TOKYO以外から選ぶ
         nextVideo = getRandomVideo(departureCity.cityName);
         initPlayer();
         setInterval(updateTimeOnly, 1000);
     });
     
-    // 引数をIDではなくcityNameに変更し、同名の地域を避けるように修正
     function getRandomVideo(excludeCityName) {
         let filtered = videoList.filter(v => v.cityName !== excludeCityName);
         return filtered[Math.floor(Math.random() * filtered.length)];
@@ -187,7 +235,6 @@
     function hideInfoScreen() {
         document.getElementById('curtain').style.display = 'none';
         document.getElementById('info-display').style.display = 'block';
-        document.getElementById('progress-container').style.display = 'block';
     }
 
     function startBar() {
@@ -195,7 +242,8 @@
         clearTimeout(nextDestinationTimer);
         bar.style.transition = 'none';
         bar.style.transform = 'scaleX(1)';
-        
+        document.getElementById('progress-container').style.display = 'block';
+
         requestAnimationFrame(() => {
             setTimeout(() => {
                 bar.style.transition = `transform ${STAY_DURATION}ms linear`;
@@ -208,13 +256,19 @@
     function nextDestination() {
         clearTimeout(nextDestinationTimer);
         departureCity = currentVideo || tokyoDefault;
-        // 「今いる場所と同じ地域名」を避けて次の動画を選ぶ
         nextVideo = getRandomVideo(departureCity.cityName);
         initPlayer();
     }
 
     function updateInfoText() {
-        if(currentVideo) document.getElementById('info-country').innerText = currentVideo.name;
+        if(currentVideo) {
+            document.getElementById('info-country').innerText = currentVideo.cityName;
+            // アニメーションを再発火させるための処理
+            const el = document.getElementById('info-display');
+            el.style.display = 'none';
+            el.offsetHeight;
+            el.style.display = 'block';
+        }
     }
 
     function updateTimeOnly() {
@@ -223,9 +277,7 @@
         const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
         
         try {
-            if (currentVideo) {
-                document.getElementById('info-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: currentVideo.tz }).format(now);
-            }
+            // 時刻表示は非表示にしたので、案内画面の時刻だけ更新
             document.querySelector('#departure-info .city-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: departureCity.tz }).format(now);
             document.querySelector('#arrival-info .city-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: nextVideo.tz }).format(now);
         } catch (e) {}
