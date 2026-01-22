@@ -7,21 +7,50 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         #player-container { position: relative; width: 100%; height: 100%; }
-        #player { width: 100%; height: 100%; }
+        #player-wrapper { width: 100%; height: 100%; }
         #guard { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: rgba(0,0,0,0); }
-        #curtain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; }
+        
+        /* 目的地情報（本編用） */
         #info-display { position: absolute; bottom: 40px; left: 40px; z-index: 7; color: white; text-shadow: 2px 2px 8px rgba(0,0,0,1); pointer-events: none; font-weight: bold; display: none; }
         #info-country { font-size: 32px; margin-bottom: 5px; }
         #info-time { font-size: 24px; opacity: 0.9; }
+        
+        /* プログレスバー（左から右へ消える） */
         #progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: rgba(255, 255, 255, 0.1); z-index: 8; display: none; }
-        /* transform-origin: right にすることで、左側から短くなる（右へ消える） */
         #progress-bar { height: 100%; width: 100%; background: #ffffff; transform-origin: right; transform: scaleX(1); }
-        .loader { border: 5px solid #333; border-top: 5px solid #fff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 広告・読込中の演出画面（フライトインフォメーション風） */
+        #curtain { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; /* ここを空の画像などにするとよりリアル */
+            z-index: 10; display: none; flex-direction: column; 
+            justify-content: flex-start; align-items: center; color: white; text-align: center; 
+            padding-top: 50px;
+        }
+
+        /* 出発地と到着地のコンテナ */
+        #flight-route { 
+            display: flex; justify-content: center; align-items: center; 
+            width: 600px; padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-top: 50px;
+        }
+
+        .city-info { text-align: center; width: 200px; }
+        .city-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .city-time { font-size: 16px; opacity: 0.7; }
+        
+        /* Oと△のアイコン */
+        .icon { width: 12px; height: 12px; margin: 0 15px; }
+        .icon.circle { border-radius: 50%; background: white; }
+        .icon.triangle { 
+            width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; 
+            border-bottom: 12px solid white; transform: rotate(90deg); /* 三角を飛行機っぽく横向きに */
+        }
+        
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 20; color: white; }
-        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: wait; opacity: 0.5; transition: 0.3s; }
-        #start-btn.enabled { cursor: pointer; opacity: 1.0; }
-        #start-btn.enabled:hover { background: white; color: black; }
+        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -36,148 +65,144 @@
         <div id="progress-container">
             <div id="progress-bar"></div>
         </div>
+        <!-- 広告中の演出画面 -->
         <div id="curtain">
-            <div class="loader"></div>
-            <div style="font-size: 24px; letter-spacing: 2px;">読み込み中...</div>
+            <div id="flight-route">
+                <div class="city-info" id="departure-info">
+                    <div class="city-name">Departure</div>
+                    <div class="city-time">--:--:--</div>
+                </div>
+                <div class="icon circle"></div>
+                <div class="icon triangle"></div>
+                <div class="city-info" id="arrival-info">
+                    <div class="city-name">Arrival</div>
+                    <div class="city-time">--:--:--</div>
+                </div>
+            </div>
+            <div style="margin-top: 50px; font-size: 14px; opacity: 0.5;">
+                <p>現在、衛星回線を調整中です。接続まで今しばらくお待ちください。</p>
+                <!-- ここにローディングアニメーションなどを追加しても良い -->
+            </div>
         </div>
         <div id="guard"></div>
-        <div id="player"></div>
+        <div id="player-wrapper"><div id="player"></div></div>
     </div>
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    const videoList = [
-        { id: 'OuCbntsMsWY', name: '日本 - 千葉 - 成田国際空港', tz: 'Asia/Tokyo' },
-        { id: 'rnXIjl_Rzy4', name: 'アメリカ - ニューヨーク - タイムズスクエア', tz: 'America/New_York' },
-        { id: 'KdXa0xp7jLs', name: 'アメリカ - ニューヨーク - 自由の女神像', tz: 'America/New_York' },
-        { id: 'R__e74ULCXQ', name: 'アメリカ - ラスベガス - ベラージオ植物園', tz: 'America/Los_Angeles' },
-        { id: 'dfVK7ld38Ys', name: '日本 - 東京 - 渋谷スクランブル交差点', tz: 'Asia/Tokyo' },
-        { id: 'gdrNUUf-cQw', name: '南アフリカ - クワズールー・ナタール - テンベ象公園', tz: 'Africa/Johannesburg' },
-        { id: '6HYjCFkmDPA', name: '日本 - 沖縄 - 那覇市内', tz: 'Asia/Tokyo' },
-        { id: 'pJC3BThpdio', name: '日本 - 鹿児島 - 鹿児島空港', tz: 'Asia/Tokyo' },
-        { id: 'ZdvNQ3D0PY4', name: '日本 - 沖縄 - 那覇空港', tz: 'Asia/Tokyo' },
-        { id: 'zNahac5x0Tw', name: '日本 - 長崎 - 長崎空港', tz: 'Asia/Tokyo' },
-        { id: 'GXg2lP8tZOY', name: '日本 - 鹿児島 - 鹿児島市内', tz: 'Asia/Tokyo' },
-        { id: '-ToX_1jSCsE', name: '日本 - 山梨 - 富士ヶ嶺ゴルフ場', tz: 'Asia/Tokyo' }
-    ];
+const videoList = [
+    { id: 'OuCbntsMsWY', name: '日本 - 千葉 - 成田国際空港', tz: 'Asia/Tokyo', cityName: 'Narita Airport' },
+    { id: 'rnXIjl_Rzy4', name: 'アメリカ - ニューヨーク - タイムズスクエア', tz: 'America/New_York', cityName: 'New York' },
+    { id: 'KdXa0xp7jLs', name: 'アメリカ - ニューヨーク - 自由の女神像', tz: 'America/New_York', cityName: 'New York' },
+    { id: 'R__e74ULCXQ', name: 'アメリカ - ラスベガス - ベラージオ植物園', tz: 'America/Los_Angeles', cityName: 'Las Vegas' },
+    { id: 'dfVK7ld38Ys', name: '日本 - 東京 - 渋谷スクランブル交差点', tz: 'Asia/Tokyo', cityName: 'Shibuya' },
+    { id: 'gdrNUUf-cQw', name: '南アフリカ - クワズールー・ナタール - テンベ象公園', tz: 'Africa/Johannesburg', cityName: 'Tembe Park' },
+    { id: '6HYjCFkmDPA', name: '日本 - 沖縄 - 那覇市内', tz: 'Asia/Tokyo', cityName: 'Naha City' },
+    { id: 'pJC3BThpdio', name: '日本 - 鹿児島 - 鹿児島空港', tz: 'Asia/Tokyo', cityName: 'Kagoshima Airport' },
+    { id: 'ZdvNQ3D0PY4', name: '日本 - 沖縄 - 那覇空港', tz: 'Asia/Tokyo', cityName: 'Naha Airport' },
+    { id: 'zNahac5x0Tw', name: '日本 - 長崎 - 長崎空港', tz: 'Asia/Tokyo', cityName: 'Nagasaki Airport' },
+    { id: 'GXg2lP8tZOY', name: '日本 - 鹿児島 - 鹿児島市内', tz: 'Asia/Tokyo', cityName: 'Kagoshima City' },
+    { id: '-ToX_1jSCsE', name: '日本 - 山梨 - 富士ヶ嶺ゴルフ場', tz: 'Asia/Tokyo', cityName: 'Yamanashi' }
+];
 
-    let player, currentVideo = null, isTourStarted = false;
-    let nextDestinationTimer = null, curtainTimeout = null, adCheckInterval = null;
-    const DISPLAY_DELAY = 5000; 
+    let player, currentVideo = null, nextVideo = null;
+    let nextDestinationTimer = null;
     const STAY_DURATION = 60000; 
 
-    function onYouTubeIframeAPIReady() {
-        currentVideo = videoList[Math.floor(Math.random() * videoList.length)];
+    document.getElementById('start-btn').addEventListener('click', () => {
+        document.getElementById('overlay').style.display = 'none';
+        // 初回は currentVideo を適当に設定して nextVideo を取得
+        currentVideo = videoList[0]; 
+        initPlayer();
+        setInterval(updateTimeOnly, 1000);
+    });
+
+    function initPlayer() {
+        if (player) { player.destroy(); }
+        document.getElementById('player-wrapper').innerHTML = '<div id="player"></div>';
+        
+        let selectedVideo;
+        do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (currentVideo.id === selectedVideo.id);
+        
+        currentVideo = selectedVideo; // 再生する動画を currentVideo にセット
+
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: currentVideo.id,
-            playerVars: { 
-                'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 
-                'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1
-            },
-            events: { 'onStateChange': onPlayerStateChange }
+            playerVars: { 'autoplay': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1 },
+            events: { 
+                'onReady': (e) => e.target.playVideo(),
+                'onStateChange': onPlayerStateChange 
+            }
         });
-        
-        const startBtn = document.getElementById('start-btn');
-        setTimeout(() => {
-            startBtn.classList.add('enabled');
-            startBtn.addEventListener('click', startTour);
-        }, 1500);
-    }
-
-    // 2026年最新：より厳格な広告・エラー検知
-    function checkAndSkipAd() {
-        if (!player || !player.getVideoData) return;
-        
-        const data = player.getVideoData();
-        const adState = player.getAdState ? player.getAdState() : 0;
-        
-        // 広告状態(1)、またはgetVideoDataに広告フラグがある場合、またはタイトルが「広告」関連の場合
-        if (adState === 1 || (data && data.ad === 1) || (data && data.title && data.title.includes("Ad"))) {
-            console.warn("広告を検知：スキップします");
-            nextDestination();
-            return true;
-        }
-        return false;
+        showInfoScreen(); // 読み込み開始時にインフォ画面を表示
     }
 
     function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.PLAYING) {
-            // 再生開始直後に広告チェック
-            if (checkAndSkipAd()) return;
+        const adState = (player.getAdState && player.getAdState() === 1);
 
+        if (adState) {
+            // 広告中
+            showInfoScreen();
+            player.mute();
+            resetBar(); 
+            return;
+        }
+
+        if (event.data === YT.PlayerState.PLAYING) {
+            // 本編開始
             player.unMute();
             player.setVolume(50);
-            updateInfoText();
-
-            // 5秒間の「読み込み中」表示の後にメイン表示
-            if (curtainTimeout) clearTimeout(curtainTimeout);
-            curtainTimeout = setTimeout(() => {
-                document.getElementById('curtain').style.display = 'none';
-                document.getElementById('info-display').style.display = 'block';
-                document.getElementById('progress-container').style.display = 'block';
+            
+            setTimeout(() => {
+                if ((player.getAdState && player.getAdState() === 1)) return;
+                hideInfoScreen();
+                updateInfoText();
                 startBar(); 
-            }, DISPLAY_DELAY);
-
-            // 再生中も定期的に広告が割り込んでいないか監視（特に長い動画用）
-            if (adCheckInterval) clearInterval(adCheckInterval);
-            adCheckInterval = setInterval(checkAndSkipAd, 2000);
+            }, 2000);
         }
-
-        if (event.data === YT.PlayerState.BUFFERING) {
-            // バッファリング（読み込み）に入った時も広告の可能性があるためチェック
-            setTimeout(checkAndSkipAd, 500);
-        }
-    }
-
-    function startTour() {
-        document.getElementById('overlay').style.display = 'none';
-        document.getElementById('curtain').style.display = 'flex';
-        player.playVideo();
-        setInterval(updateTimeOnly, 1000);
-    }
-
-    function nextDestination() {
-        clearTimeout(nextDestinationTimer);
-        if (curtainTimeout) clearTimeout(curtainTimeout);
-        if (adCheckInterval) clearInterval(adCheckInterval);
         
+        if (event.data === YT.PlayerState.BUFFERING) {
+            showInfoScreen();
+        }
+    }
+
+    // 広告中/移動中に表示する画面
+    function showInfoScreen() {
+        // 出発地と到着地の都市名をセット
+        document.querySelector('#departure-info .city-name').innerText = currentVideo.cityName || currentVideo.name.split(' - ').pop();
+        document.querySelector('#arrival-info .city-name').innerText = "Next Stop"; // 次の到着地はまだ分からないため仮置き
+
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
         document.getElementById('progress-container').style.display = 'none';
-        
-        // バーを即座に満タンに戻す
-        const bar = document.getElementById('progress-bar');
-        bar.style.transition = 'none';
-        bar.style.transform = 'scaleX(1)';
+    }
 
-        let nextVideo;
-        do { 
-            nextVideo = videoList[Math.floor(Math.random() * videoList.length)]; 
-        } while (nextVideo.id === currentVideo.id);
-        
-        currentVideo = nextVideo;
-        player.mute();
-        player.loadVideoById(currentVideo.id);
+    function hideInfoScreen() {
+        document.getElementById('curtain').style.display = 'none';
+        document.getElementById('info-display').style.display = 'block';
+        document.getElementById('progress-container').style.display = 'block';
     }
 
     function startBar() {
         const bar = document.getElementById('progress-bar');
         clearTimeout(nextDestinationTimer);
-
-        // 一旦リセット
         bar.style.transition = 'none';
         bar.style.transform = 'scaleX(1)';
         
-        // ブラウザの描画タイミングに合わせてアニメーション開始
         requestAnimationFrame(() => {
             setTimeout(() => {
-                // 1分かけて scaleX を 1 から 0 へ（右を支点に左から消える）
                 bar.style.transition = `transform ${STAY_DURATION}ms linear`;
                 bar.style.transform = 'scaleX(0)';
-                
-                nextDestinationTimer = setTimeout(nextDestination, STAY_DURATION);
+                nextDestinationTimer = setTimeout(initPlayer, STAY_DURATION);
             }, 50);
         });
+    }
+
+    function resetBar() {
+        clearTimeout(nextDestinationTimer);
+        const bar = document.getElementById('progress-bar');
+        bar.style.transition = 'none';
+        bar.style.transform = 'scaleX(1)';
     }
 
     function updateInfoText() {
@@ -186,17 +211,23 @@
     }
 
     function updateTimeOnly() {
-        if (!currentVideo || !player) return;
+        if (!currentVideo) return;
         const now = new Date();
+        
+        // 本編画面の時刻更新
         try {
-            const timeStr = now.toLocaleTimeString('ja-JP', { 
-                timeZone: currentVideo.tz, 
-                hour: '2-digit', minute: '2-digit', second: '2-digit' 
-            });
+            const timeStr = now.toLocaleTimeString('ja-JP', { timeZone: currentVideo.tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
             document.getElementById('info-time').innerText = timeStr;
         } catch (e) {
             document.getElementById('info-time').innerText = "--:--:--";
         }
+        
+        // インフォ画面の出発地時刻更新 (到着地はcurrentVideoと同じTZなので省略)
+        try {
+             document.querySelector('#departure-info .city-time').innerText = now.toLocaleTimeString('ja-JP', { timeZone: currentVideo.tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+             document.querySelector('#arrival-info .city-time').innerText = now.toLocaleTimeString('ja-JP', { timeZone: currentVideo.tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        } catch (e) {}
+
     }
 </script>
 </body>
