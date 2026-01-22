@@ -8,7 +8,7 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Helvetica Neue', Arial, sans-serif; }
         #player-container { position: relative; width: 100%; height: 100%; }
-        #player-wrapper { width: 100%; height: 100%; pointer-events: none; }
+        #player-wrapper { width: 100%; height: 100%; }
         
         /* 目的地情報：ニュース速報風のデザイン（背景透明） */
         #info-display { 
@@ -125,7 +125,7 @@
         <div id="player-wrapper"><div id="player"></div></div>
     </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://www.youtube.com"></script>
 <script>
     const videoList = [
         { id: 'OuCbntsMsWY', name: '日本 - 成田国際空港', tz: 'Asia/Tokyo', cityName: 'CHIBA' },
@@ -170,7 +170,8 @@
         document.getElementById('overlay').style.display = 'none';
         departureCity = tokyoDefault;
         nextVideo = getRandomVideo(departureCity.cityName);
-        initPlayer();
+        // initPlayer()をloadNewVideo()に名称変更
+        loadNewVideo();
         setInterval(updateTimeOnly, 1000);
     });
     
@@ -179,37 +180,39 @@
         return filtered[Math.floor(Math.random() * filtered.length)];
     }
 
-    function initPlayer() {
+    function loadNewVideo() {
         if (player) {
-            // プレイヤーが存在する場合は一度破棄し、確実に再生成する
-            player.destroy();
+            // 既存プレイヤーがあれば動画だけ入れ替える
+            player.loadVideoById({ videoId: nextVideo.id });
+            player.mute(); 
+        } else {
+            // 初回のみプレイヤーを生成
+            player = new YT.Player('player', {
+                height: '100%', width: '100%', videoId: nextVideo.id,
+                playerVars: { 
+                    'autoplay': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 
+                    'modestbranding': 1, 'mute': 1, 'playsinline': 1 
+                },
+                events: { 
+                    'onReady': (e) => e.target.playVideo(),
+                    'onStateChange': onPlayerStateChange 
+                }
+            });
         }
-        document.getElementById('player-wrapper').innerHTML = '<div id="player"></div>';
-        
-        player = new YT.Player('player', {
-            height: '100%', width: '100%', videoId: nextVideo.id,
-            playerVars: { 
-                'autoplay': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 
-                'modestbranding': 1, 'mute': 1, 'playsinline': 1 
-            },
-            events: { 
-                'onReady': (e) => e.target.playVideo(),
-                'onStateChange': onPlayerStateChange 
-            }
-        });
         showInfoScreen();
     }
 
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) {
             setTimeout(() => {
+                // 音を出す前に現在の動画情報をセット
+                currentVideo = nextVideo; 
                 player.unMute();
                 player.setVolume(40);
             }, 500);
             
             setTimeout(() => {
                 hideInfoScreen();
-                currentVideo = nextVideo;
                 updateInfoText();
                 startBar(); 
             }, HIDE_DELAY);
@@ -227,6 +230,7 @@
         document.querySelector('#arrival-info .city-name').innerText = nextVideo.cityName; 
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
+        document.getElementById('progress-container').style.display = 'none';
     }
 
     function hideInfoScreen() {
@@ -254,7 +258,7 @@
         clearTimeout(nextDestinationTimer);
         departureCity = currentVideo || tokyoDefault;
         nextVideo = getRandomVideo(departureCity.cityName);
-        initPlayer();
+        loadNewVideo();
     }
 
     function updateInfoText() {
