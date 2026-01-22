@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" href="data:,">
-    <title>World Now - 2026 Edition</title>
+    <title>World Now - White Edition</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #fff; overflow: hidden; font-family: sans-serif; color: #000; }
         #player-container { position: relative; width: 100%; height: 100%; }
         #player-wrapper { width: 100%; height: 100%; }
-        #guard { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: rgba(0,0,0,0); }
         
         /* 目的地情報（本編用） */
         #info-display { position: absolute; bottom: 40px; left: 40px; z-index: 7; color: white; text-shadow: 2px 2px 8px rgba(0,0,0,1); pointer-events: none; font-weight: bold; display: none; }
@@ -16,41 +15,35 @@
         #info-time { font-size: 24px; opacity: 0.9; }
         
         /* プログレスバー（左から右へ消える） */
-        #progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: rgba(255, 255, 255, 0.1); z-index: 8; display: none; }
-        #progress-bar { height: 100%; width: 100%; background: #ffffff; transform-origin: right; transform: scaleX(1); }
+        #progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: rgba(0, 0, 0, 0.1); z-index: 8; display: none; }
+        #progress-bar { height: 100%; width: 100%; background: #000000; transform-origin: right; transform: scaleX(1); }
         
         /* 広告・読込中の演出画面（フライトインフォメーション風） */
         #curtain { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; /* ここを空の画像などにするとよりリアル */
+            background: #fff; /* 背景を白に */
             z-index: 10; display: none; flex-direction: column; 
-            justify-content: flex-start; align-items: center; color: white; text-align: center; 
-            padding-top: 50px;
+            justify-content: center; align-items: center; text-align: center; 
         }
 
         /* 出発地と到着地のコンテナ */
         #flight-route { 
             display: flex; justify-content: center; align-items: center; 
             width: 600px; padding: 20px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.05); /* 薄い灰色の背景 */
             border-radius: 10px;
-            margin-top: 50px;
         }
 
-        .city-info { text-align: center; width: 200px; }
+        .city-info { text-align: center; width: 250px; }
         .city-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
         .city-time { font-size: 16px; opacity: 0.7; }
         
-        /* Oと△のアイコン */
-        .icon { width: 12px; height: 12px; margin: 0 15px; }
-        .icon.circle { border-radius: 50%; background: white; }
-        .icon.triangle { 
-            width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; 
-            border-bottom: 12px solid white; transform: rotate(90deg); /* 三角を飛行機っぽく横向きに */
-        }
+        /* Oと△のアイコン (非表示にするか、点線に変更) */
+        .separator { margin: 0 10px; font-size: 24px; color: #aaa; }
         
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 20; color: white; }
-        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 20; }
+        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid black; background: none; color: black; cursor: pointer; transition: 0.3s; }
+        #start-btn:hover { background: black; color: white; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -72,17 +65,14 @@
                     <div class="city-name">Departure</div>
                     <div class="city-time">--:--:--</div>
                 </div>
-                <div class="icon circle"></div>
-                <div class="icon triangle"></div>
+                <!-- 点と三角を削除し、矢印かテキストに変更 -->
+                <div class="separator">→</div> 
                 <div class="city-info" id="arrival-info">
                     <div class="city-name">Arrival</div>
                     <div class="city-time">--:--:--</div>
                 </div>
             </div>
-            <div style="margin-top: 50px; font-size: 14px; opacity: 0.5;">
-                <p>現在、衛星回線を調整中です。接続まで今しばらくお待ちください。</p>
-                <!-- ここにローディングアニメーションなどを追加しても良い -->
-            </div>
+            <!-- 「現在、衛星回線を調整中です」の文章を削除 -->
         </div>
         <div id="guard"></div>
         <div id="player-wrapper"><div id="player"></div></div>
@@ -90,29 +80,28 @@
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-const videoList = [
-    { id: 'OuCbntsMsWY', name: '日本 - 千葉 - 成田国際空港', tz: 'Asia/Tokyo', cityName: 'Narita Airport' },
-    { id: 'rnXIjl_Rzy4', name: 'アメリカ - ニューヨーク - タイムズスクエア', tz: 'America/New_York', cityName: 'New York' },
-    { id: 'KdXa0xp7jLs', name: 'アメリカ - ニューヨーク - 自由の女神像', tz: 'America/New_York', cityName: 'New York' },
-    { id: 'R__e74ULCXQ', name: 'アメリカ - ラスベガス - ベラージオ植物園', tz: 'America/Los_Angeles', cityName: 'Las Vegas' },
-    { id: 'dfVK7ld38Ys', name: '日本 - 東京 - 渋谷スクランブル交差点', tz: 'Asia/Tokyo', cityName: 'Shibuya' },
-    { id: 'gdrNUUf-cQw', name: '南アフリカ - クワズールー・ナタール - テンベ象公園', tz: 'Africa/Johannesburg', cityName: 'Tembe Park' },
-    { id: '6HYjCFkmDPA', name: '日本 - 沖縄 - 那覇市内', tz: 'Asia/Tokyo', cityName: 'Naha City' },
-    { id: 'pJC3BThpdio', name: '日本 - 鹿児島 - 鹿児島空港', tz: 'Asia/Tokyo', cityName: 'Kagoshima Airport' },
-    { id: 'ZdvNQ3D0PY4', name: '日本 - 沖縄 - 那覇空港', tz: 'Asia/Tokyo', cityName: 'Naha Airport' },
-    { id: 'zNahac5x0Tw', name: '日本 - 長崎 - 長崎空港', tz: 'Asia/Tokyo', cityName: 'Nagasaki Airport' },
-    { id: 'GXg2lP8tZOY', name: '日本 - 鹿児島 - 鹿児島市内', tz: 'Asia/Tokyo', cityName: 'Kagoshima City' },
-    { id: '-ToX_1jSCsE', name: '日本 - 山梨 - 富士ヶ嶺ゴルフ場', tz: 'Asia/Tokyo', cityName: 'Yamanashi' }
-];
+    const videoList = [
+        { id: 'OuCbntsMsWY', name: '日本 - 千葉 - 成田国際空港', tz: 'Asia/Tokyo', cityName: 'Narita Airport' },
+        { id: 'rnXIjl_Rzy4', name: 'アメリカ - ニューヨーク - タイムズスクエア', tz: 'America/New_York', cityName: 'New York' },
+        { id: 'KdXa0xp7jLs', name: 'アメリカ - ニューヨーク - 自由の女神像', tz: 'America/New_York', cityName: 'New York' },
+        { id: 'R__e74ULCXQ', name: 'アメリカ - ラスベガス - ベラージオ植物園', tz: 'America/Los_Angeles', cityName: 'Las Vegas' },
+        { id: 'dfVK7ld38Ys', name: '日本 - 東京 - 渋谷スクランブル交差点', tz: 'Asia/Tokyo', cityName: 'Shibuya' },
+        { id: 'gdrNUUf-cQw', name: '南アフリカ - クワズールー・ナタール - テンベ象公園', tz: 'Africa/Johannesburg', cityName: 'Tembe Park' },
+        { id: '6HYjCFkmDPA', name: '日本 - 沖縄 - 那覇市内', tz: 'Asia/Tokyo', cityName: 'Naha City' },
+        { id: 'pJC3BThpdio', name: '日本 - 鹿児島 - 鹿児島空港', tz: 'Asia/Tokyo', cityName: 'Kagoshima Airport' },
+        { id: 'ZdvNQ3D0PY4', name: '日本 - 沖縄 - 那覇空港', tz: 'Asia/Tokyo', cityName: 'Naha Airport' },
+        { id: 'zNahac5x0Tw', name: '日本 - 長崎 - 長崎空港', tz: 'Asia/Tokyo', cityName: 'Nagasaki Airport' },
+        { id: 'GXg2lP8tZOY', name: '日本 - 鹿児島 - 鹿児島市内', tz: 'Asia/Tokyo', cityName: 'Kagoshima City' },
+        { id: '-ToX_1jSCsE', name: '日本 - 山梨 - 富士ヶ嶺ゴルフ場', tz: 'Asia/Tokyo', cityName: 'Yamanashi' }
+    ];
 
-    let player, currentVideo = null, nextVideo = null;
+    let player, currentVideo = null;
     let nextDestinationTimer = null;
     const STAY_DURATION = 60000; 
 
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
-        // 初回は currentVideo を適当に設定して nextVideo を取得
-        currentVideo = videoList[0]; 
+        currentVideo = videoList; 
         initPlayer();
         setInterval(updateTimeOnly, 1000);
     });
@@ -124,7 +113,7 @@ const videoList = [
         let selectedVideo;
         do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (currentVideo.id === selectedVideo.id);
         
-        currentVideo = selectedVideo; // 再生する動画を currentVideo にセット
+        currentVideo = selectedVideo; 
 
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: currentVideo.id,
@@ -134,14 +123,13 @@ const videoList = [
                 'onStateChange': onPlayerStateChange 
             }
         });
-        showInfoScreen(); // 読み込み開始時にインフォ画面を表示
+        showInfoScreen(); 
     }
 
     function onPlayerStateChange(event) {
         const adState = (player.getAdState && player.getAdState() === 1);
 
         if (adState) {
-            // 広告中
             showInfoScreen();
             player.mute();
             resetBar(); 
@@ -149,7 +137,6 @@ const videoList = [
         }
 
         if (event.data === YT.PlayerState.PLAYING) {
-            // 本編開始
             player.unMute();
             player.setVolume(50);
             
@@ -166,11 +153,10 @@ const videoList = [
         }
     }
 
-    // 広告中/移動中に表示する画面
     function showInfoScreen() {
-        // 出発地と到着地の都市名をセット
-        document.querySelector('#departure-info .city-name').innerText = currentVideo.cityName || currentVideo.name.split(' - ').pop();
-        document.querySelector('#arrival-info .city-name').innerText = "Next Stop"; // 次の到着地はまだ分からないため仮置き
+        // 出発地名と到着地名を設定
+        document.querySelector('#departure-info .city-name').innerText = currentVideo.cityName || 'Departure';
+        document.querySelector('#arrival-info .city-name').innerText = "Arrival";
 
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
@@ -214,18 +200,11 @@ const videoList = [
         if (!currentVideo) return;
         const now = new Date();
         
-        // 本編画面の時刻更新
         try {
             const timeStr = now.toLocaleTimeString('ja-JP', { timeZone: currentVideo.tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
             document.getElementById('info-time').innerText = timeStr;
-        } catch (e) {
-            document.getElementById('info-time').innerText = "--:--:--";
-        }
-        
-        // インフォ画面の出発地時刻更新 (到着地はcurrentVideoと同じTZなので省略)
-        try {
-             document.querySelector('#departure-info .city-time').innerText = now.toLocaleTimeString('ja-JP', { timeZone: currentVideo.tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-             document.querySelector('#arrival-info .city-time').innerText = now.toLocaleTimeString('ja-JP', { timeZone: currentVideo.tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+             document.querySelector('#departure-info .city-time').innerText = timeStr;
+             document.querySelector('#arrival-info .city-time').innerText = timeStr;
         } catch (e) {}
 
     }
