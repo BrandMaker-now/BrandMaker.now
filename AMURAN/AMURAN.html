@@ -135,19 +135,25 @@
             const status = document.getElementById('status-text');
             const altitude = document.getElementById('altitude-text');
 
-            if (time < 120) {
-                status.innerText = "アミュラン上昇中 🎡";
-                altitude.innerText = "標高: 約 20 m";
-            } else if (time < 440) {
-                status.innerText = "鹿児島の街並みが見えてきた 🏙️";
-                altitude.innerText = "標高: 約 60 m";
-            } else if (time < 510) {
-                status.innerText = "最高地点！桜島が正面です 🌋";
-                altitude.innerText = "標高: 91 m";
-            } else {
-                status.innerText = "ゆっくり下降しています 🎢";
-                altitude.innerText = "標高: 約 40 m";
-            }
+             if (time < 140) {
+        status.innerText = "まもなく景色が見えてきます 🎡";
+        altitude.innerText = "標高: 上昇中...";
+    } else if (time < 300) {
+        status.innerText = "鹿児島中央駅と街並みが一望 🏙️";
+        altitude.innerText = "標高: 約 40 m";
+    } else if (time < 440) {
+        status.innerText = "だんだん高くなってきました ✨";
+        altitude.innerText = "標高: 約 70 m";
+    } else if (time < 510) {
+        status.innerText = "最高地点！桜島が正面です 🌋";
+        altitude.innerText = "標高: 91 m";
+    } else if (time < 800) {
+        status.innerText = "錦江湾と遠くの山々が見えます 🌊";
+        altitude.innerText = "標高: 下降中...";
+    } else {
+        status.innerText = "まもなく到着です 🎡";
+        altitude.innerText = "標高: 約 10 m";
+    }
         }
     </script>
 </body>
