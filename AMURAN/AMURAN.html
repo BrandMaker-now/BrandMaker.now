@@ -3,39 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>アミュラン空中散歩体験 🎡</title>
+    <link rel="icon" href="WorldNow_favicon.ico">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
         
-        /* 動画エリア：クリック（停止）を無効化 */
+        /* 動画エリア：クリック操作を完全に無効化 */
         #video-wrapper { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
-            pointer-events: none; /* ← これで動画をクリックしても停止しなくなります */
+            pointer-events: none; 
         }
 
-        /* 最初のタイトルや広告を隠すための黒い幕 */
+        /* 最初のタイトル・広告・ロゴを隠すための黒い幕 */
         #video-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 5;
             display: flex; align-items: center; justify-content: center;
-            color: white; transition: opacity 2s ease; /* 2秒かけてフワッと消える */
+            color: white; transition: opacity 2s ease;
         }
 
+        /* 右上の常駐ツールチップ */
         #info-tooltip {
             position: absolute; top: 20px; right: 20px; z-index: 10;
             background: rgba(0, 0, 0, 0.7); color: white; padding: 15px; border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.3); min-width: 200px;
         }
 
+        /* ホームに戻るボタン */
         .back-button {
             position: absolute; top: 20px; left: 20px; z-index: 10;
-            color: white; text-decoration: none; background: rgba(0,0,0,0.5);
+            color: white; text-decoration: none; background: rgba(0, 0, 0, 0.5);
             padding: 10px; border-radius: 5px;
         }
     </style>
 </head>
 <body>
 
-    <!-- 最初の数秒間、これで見えなくします -->
+    <!-- 起動時の黒幕（タイトル隠し用） -->
     <div id="video-overlay">
         <div id="loading-text">🎡 まもなく出発します...</div>
     </div>
@@ -52,6 +55,7 @@
 
     <a href="../index.html" class="back-button">← ホームに戻る</a>
 
+    <!-- YouTube API の読み込み -->
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
@@ -62,13 +66,14 @@
                 width: '100%',
                 videoId: 'uX8g9pbRnIA',
                 playerVars: {
-                    'start': 55,
-                    'controls': 0,      // 操作バーを消す
-                    'disablekb': 1,    // キーボード操作を禁止
-                    'modestbranding': 1, // ロゴを減らす
+                    'start': 55,        // 55秒から開始
+                    'controls': 0,      // 操作バー非表示
+                    'disablekb': 1,    // キーボード操作禁止
+                    'modestbranding': 1, // ロゴを最小化
                     'rel': 0,
                     'autoplay': 1,
-                    'mute': 1
+                    'mute': 1,          // 自動再生のため必須
+                    'origin': location.origin // 通信エラー対策
                 },
                 events: {
                     'onReady': onPlayerReady,
@@ -79,19 +84,24 @@
 
         function onPlayerReady(event) {
             event.target.playVideo();
-            // 1秒ごとにガイド更新
             setInterval(updateGuide, 1000);
+            
+            // 安全策：読み込みが遅くても5秒後には必ず幕を開ける
+            setTimeout(hideOverlay, 5000);
         }
 
         function onPlayerStateChange(event) {
-            // 動画が再生開始（広告が終わるかスキップされたタイミング）を検知
+            // 再生が開始されたら3秒後に幕を消す
             if (event.data == YT.PlayerState.PLAYING) {
-                // 3秒待ってから黒い幕を消す（タイトルや最初の広告を見せないため）
-                setTimeout(() => {
-                    const overlay = document.getElementById('video-overlay');
-                    overlay.style.opacity = '0';
-                    setTimeout(() => { overlay.style.display = 'none'; }, 2000);
-                }, 3000);
+                setTimeout(hideOverlay, 3000);
+            }
+        }
+
+        function hideOverlay() {
+            const overlay = document.getElementById('video-overlay');
+            if (overlay && overlay.style.display !== 'none') {
+                overlay.style.opacity = '0';
+                setTimeout(() => { overlay.style.display = 'none'; }, 2000);
             }
         }
 
@@ -101,7 +111,6 @@
             const status = document.getElementById('status-text');
             const altitude = document.getElementById('altitude-text');
 
-            // 55秒スタートなので、経過時間に合わせて調整
             if (time < 120) {
                 status.innerText = "アミュラン上昇中 🎡";
                 altitude.innerText = "標高: 約 20 m";
