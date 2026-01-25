@@ -3,48 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMURAN</title>
-    <link rel="stylesheet" href="style.css">
+    <title>アミュラン空中散歩体験 🎡</title>
+    <!-- CSSがない場合は一旦ここを消すか、下のstyleに書く -->
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #video-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #info-tooltip {
+            position: absolute; top: 20px; right: 20px; z-index: 10;
+            background: rgba(0, 0, 0, 0.7); color: white; padding: 15px; border-radius: 10px;
+            font-family: sans-serif; border: 1px solid rgba(255,255,255,0.3);
+        }
+        .back-button {
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            color: white; text-decoration: none; background: rgba(0,0,0,0.5);
+            padding: 10px; border-radius: 5px; font-family: sans-serif;
+        }
+    </style>
 </head>
 <body>
 
-    <div id="experience-container">
-
-<div id="video-wrapper">
-    <iframe 
-        width="100%" 
-        height="100%" 
-        src="https://www.youtube.com" 
-        title="アミュラン空中散歩" 
-        frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-        allowfullscreen>
-    </iframe>
-</div>
-
-        </div>
-
-        <div id="info-tooltip" class="glass-ui">
-            <div class="label">現在の状況</div>
-            <div id="current-location">地上付近を上昇中</div>
-            <div id="altitude-counter">標高: <span id="alt-value">0</span>m</div>
-        </div>
-
-        <div id="floating-guide" class="floating-label">
-            <span id="guide-icon">🌋</span>
-            <span id="guide-text">桜島</span>
-        </div>
-
-        <a href="../index.html" class="back-button">← ホームに戻る</a>
-
-        <div id="mode-selector">
-            <button class="mode-btn active">☀️ 昼</button>
-            <button class="mode-btn">🌙 夜 (準備中)</button>
-        </div>
-
+    <div id="video-wrapper">
+        <!-- srcの "/embed/" が重要です。watch?v= だと拒否されます -->
+        <iframe 
+            width="100%" height="100%" 
+            src="https://www.youtube.com/iframe_api" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen>
+        </iframe>
     </div>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="script.js"></script>
+    <div id="info-tooltip">
+        <div style="font-size: 12px; opacity: 0.8;">現在の状況</div>
+        <div>アミュラン上昇中 🎡</div>
+        <div style="margin-top: 5px;">標高: 準備中</div>
+    </div>
+
+    <a href="../index.html" class="back-button">← ホームに戻る</a>
+
 </body>
 </html>
